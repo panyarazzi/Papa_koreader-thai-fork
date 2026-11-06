@@ -1,0 +1,103 @@
+name: alt-status-bar-apk
+
+on:
+  push:
+    branches:
+      - feature/alt-status-bar-chapter-info
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  android-arm64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          show-progress: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            autoconf \
+            automake \
+            build-essential \
+            ca-certificates \
+            cmake \
+            gcc-multilib \
+            gettext \
+            git \
+            libtool \
+            libtool-bin \
+            meson \
+            nasm \
+            ninja-build \
+            openjdk-17-jdk-headless \
+            p7zip-full \
+            patch \
+            pkg-config \
+            unzip \
+            wget
+
+      - name: Fetch thirdparty
+        run: make TARGET= fetchthirdparty
+
+      - name: Patch libdatrie Android configure probe
+        run: |
+          sed -i \
+            's/ac_cv_func_iconv_open=yes/ac_cv_func_iconv_open=yes datrie_cv_langinfo_codeset=yes/' \
+            base/thirdparty/libdatrie/CMakeLists.txt
+
+      - name: Build Android ARM64 APK
+        run: |
+          unset ANDROID_HOME ANDROID_SDK_ROOT ANDROID_NDK_HOME ANDROID_NDK_ROOT
+          ./kodev release android-arm64
+
+      - name: Sign APK
+        run: |
+          set -euo pipefail
+          build_tools="$(find "${ANDROID_HOME}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+          unsigned_apk="$(find . -maxdepth 1 -name 'koreader-android-arm64-*.apk' | head -n1)"
+          test -n "${unsigned_apk}"
+          sanitized_apk="${RUNNER_TEMP}/koreader-thai-unsigned-sanitized.apk"
+          cp "${unsigned_apk}" "${sanitized_apk}"
+          zip -d "${sanitized_apk}" \
+            'META-INF/com/android/build/gradle/app-metadata.properties' \
+            'META-INF/version-control-info.textproto' \
+            'META-INF/*.kotlin_module' || true
+          keytool -genkeypair \
+            -keystore "${RUNNER_TEMP}/koreader-thai-debug.keystore" \
+            -storepass android \
+            -keypass android \
+            -alias androiddebugkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          "${build_tools}/zipalign" -f -p 4 "${sanitized_apk}" "${RUNNER_TEMP}/koreader-thai-aligned.apk"
+          "${build_tools}/apksigner" sign \
+            --ks "${RUNNER_TEMP}/koreader-thai-debug.keystore" \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out koreader-thai-android-arm64.apk \
+            "${RUNNER_TEMP}/koreader-thai-aligned.apk"
+          "${build_tools}/apksigner" verify --verbose --print-certs koreader-thai-android-arm64.apk
+
+      - name: List APKs
+        run: ls -lh koreader-thai-android-arm64.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: koreader-thai-android-arm64-apk
+          path: koreader-thai-android-arm64.apk
