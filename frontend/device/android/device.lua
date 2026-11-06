@@ -176,18 +176,12 @@ function Device:init()
                 -- to-do: keyboard connected, disconnected
             elseif ev.code == C.APP_CMD_CONTENT_RECT_CHANGED
                 or ev.code == C.APP_CMD_WINDOW_RESIZED then
-                -- System bars may appear or disappear without a display
-                -- configuration change. Refresh the framebuffer and UI geometry
-                -- when NativeActivity reports a content/window size change.
+                -- NativeActivity updates android.app.contentRect before posting
+                -- APP_CMD_CONTENT_RECT_CHANGED. Read it only after receiving the
+                -- command, then keep rendering and touch coordinates in sync.
                 logger.info("Android content/window geometry changed", ev.code)
-                -- Record the values exposed by the Launcher while system bars
-                -- transition. On API 19+, immersive mode may keep the app laid
-                -- out edge-to-edge, so do not apply a viewport until the
-                -- reported inset has been verified on-device.
-                logger.info("Android status bar height reported as", android.getStatusBarHeight())
-                logger.info("Android screen dimensions reported as",
-                    android.getScreenWidth(), android.getScreenHeight())
                 this.device.screen:resize()
+                this.device:updateSystemBarViewport()
                 local new_size = this.device.screen:getSize()
                 logger.info("Refreshing screen geometry to", new_size)
                 local FileManager = require("apps/filemanager/filemanager")
@@ -392,6 +386,59 @@ function Device:setViewport(x, y, w, h)
     logger.info(string.format("Switching viewport to new geometry [x=%d,y=%d,w=%d,h=%d]", x, y, w, h))
     local viewport = Geom:new{x=x, y=y, w=w, h=h}
     self.screen:setViewport(viewport)
+end
+
+-- Recompute the usable display area from NativeActivity's content rectangle.
+-- The Launcher glue updates android.app.contentRect under its mutex and posts
+-- APP_CMD_CONTENT_RECT_CHANGED after the update. The event handler calls this
+-- method after receiving that command.
+function Device:updateSystemBarViewport()
+    local width = android.getScreenWidth()
+    local height = android.getScreenHeight()
+    local rect = android.app.contentRect
+
+    local left = tonumber(rect.left)
+    local top = tonumber(rect.top)
+    local right = tonumber(rect.right)
+    local bottom = tonumber(rect.bottom)
+
+    logger.info("Android content rectangle", left, top, right, bottom)
+    logger.info("Android display dimensions", width, height)
+
+    -- Reject an empty or out-of-bounds rectangle rather than accidentally
+    -- shrinking the reader to an invalid viewport.
+    if not left or not top or not right or not bottom
+        or right <= left or bottom <= top
+        or left < 0 or top < 0 or right > width or bottom > height
+    then
+        logger.warn("Ignoring invalid Android content rectangle")
+        return false
+    end
+
+    local viewport = Geom:new{
+        x = left,
+        y = top,
+        w = right - left,
+        h = bottom - top,
+    }
+
+    self.viewport = viewport
+    self.screen:setViewport(viewport)
+
+    -- Match touch coordinates to the inset viewport. Reset the previous
+    -- Android viewport translation first so repeated bar transitions do not
+    -- accumulate offsets.
+    local Input = require("device/input")
+    self.input.eventAdjustHook = Input.eventAdjustHook
+    if left ~= 0 or top ~= 0 then
+        self.input:registerEventAdjustHook(
+            self.input.adjustTouchTranslate,
+            {x = -left, y = -top}
+        )
+    end
+
+    logger.info("Applied Android content viewport", viewport)
+    return true
 end
 
 -- fullscreen
