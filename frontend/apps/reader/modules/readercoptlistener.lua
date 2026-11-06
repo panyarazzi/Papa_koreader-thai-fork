@@ -35,6 +35,9 @@ function ReaderCoptListener:onReadSettings(config)
     self.battery = G_reader_settings:readSetting("cre_header_battery", 1)
     self.battery_percent = G_reader_settings:readSetting("cre_header_battery_percent", 0)
     self.chapter_marks = G_reader_settings:readSetting("cre_header_chapter_marks", 1)
+    -- Optional chapter metadata in the alternative status bar.
+    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 0)
+    self.chapter_page_progress = G_reader_settings:readSetting("cre_header_chapter_page_progress", 0)
 
     self.document._document:setIntProperty("window.status.title", self.title)
     self.document._document:setIntProperty("window.status.author", self.author)
@@ -50,6 +53,7 @@ function ReaderCoptListener:onReadSettings(config)
     -- if we have to display any chunk of it
     self.page_info_override = self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1
         or (self.battery == 1 and self.battery_percent == 1) -- don't forget a sole battery
+        or self.chapter_title == 1 or self.chapter_page_progress == 1
     self.document:setPageInfoOverride("") -- an empty string lets crengine display its own page info
 
     self:onTimeFormatChanged()
@@ -141,6 +145,27 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
                 additional_content = additional_content .. "  " -- double spaces as crengine's own drawing
             end
         end
+    end
+
+    -- Add optional chapter information to the same page-info area used by the native header.
+    if self.chapter_title == 1 then
+        local title = self.ui.toc:getTocTitleByPage(pageno)
+        if title and title ~= "" then
+            additional_content = additional_content .. title .. "  "
+        end
+    end
+    if self.chapter_page_progress == 1 then
+        local current = self.ui.toc:getChapterPagesDone(pageno)
+        -- Match ReaderFooter's page-number semantics (current page, not pages already read).
+        if current then
+            current = current + 1
+        elseif self.document:hasHiddenFlows() then
+            current = self.document:getPageNumberInFlow(pageno)
+        else
+            current = pageno
+        end
+        local total = self.ui.toc:getChapterPageCount(pageno) or self.document:getPageCount()
+        additional_content = additional_content .. string.format("%d/%d", current, total) .. "  "
     end
 
     local page_info = ""
@@ -345,7 +370,9 @@ function ReaderCoptListener:removeAdditionalHeaderContent(content_func)
 end
 
 function ReaderCoptListener:setAndSave(setting, property, value)
-    self.document._document:setIntProperty(property, value)
+    if property then
+        self.document._document:setIntProperty(property, value)
+    end
     G_reader_settings:saveSetting(setting, value)
     self:onUpdateHeader()
 end
@@ -353,6 +380,7 @@ end
 function ReaderCoptListener:onUpdateHeader()
     self.page_info_override = self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1
         or (self.battery == 1 and self.battery_percent == 1) -- don't forget a sole battery
+        or self.chapter_title == 1 or self.chapter_page_progress == 1
 
     self:updatePageInfoOverride()
     -- Have crengine redraw it (even if hidden by the menu at this time)
@@ -445,6 +473,27 @@ function ReaderCoptListener:getAltStatusBarMenu()
                     self.page_count = self.page_count == 0 and 1 or 0
                     self:setAndSave("cre_header_page_count", "window.status.pos.page.count", self.page_count)
                 end,
+            },
+            {
+                text = _("Chapter title"),
+                checked_func = function()
+                    return self.chapter_title == 1
+                end,
+                callback = function()
+                    self.chapter_title = self.chapter_title == 0 and 1 or 0
+                    self:setAndSave("cre_header_chapter_title", nil, self.chapter_title)
+                end,
+            },
+            {
+                text = _("Current page in chapter"),
+                checked_func = function()
+                    return self.chapter_page_progress == 1
+                end,
+                callback = function()
+                    self.chapter_page_progress = self.chapter_page_progress == 0 and 1 or 0
+                    self:setAndSave("cre_header_chapter_page_progress", nil, self.chapter_page_progress)
+                end,
+                separator = true,
             },
             {
                 text = _("Progress percentage"),
