@@ -180,6 +180,13 @@ function Device:init()
                 -- configuration change. Refresh the framebuffer and UI geometry
                 -- when NativeActivity reports a content/window size change.
                 logger.info("Android content/window geometry changed", ev.code)
+                -- Record the values exposed by the Launcher while system bars
+                -- transition. On API 19+, immersive mode may keep the app laid
+                -- out edge-to-edge, so do not apply a viewport until the
+                -- reported inset has been verified on-device.
+                logger.info("Android status bar height reported as", android.getStatusBarHeight())
+                logger.info("Android screen dimensions reported as",
+                    android.getScreenWidth(), android.getScreenHeight())
                 this.device.screen:resize()
                 local new_size = this.device.screen:getSize()
                 logger.info("Refreshing screen geometry to", new_size)
