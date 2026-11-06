@@ -174,6 +174,23 @@ function Device:init()
                     end
                 end
                 -- to-do: keyboard connected, disconnected
+            elseif ev.code == C.APP_CMD_CONTENT_RECT_CHANGED
+                or ev.code == C.APP_CMD_WINDOW_RESIZED then
+                -- System bars may appear or disappear without a display
+                -- configuration change. Refresh the framebuffer and UI geometry
+                -- when NativeActivity reports a content/window size change.
+                logger.info("Android content/window geometry changed", ev.code)
+                this.device.screen:resize()
+                local new_size = this.device.screen:getSize()
+                logger.info("Refreshing screen geometry to", new_size)
+                local FileManager = require("apps/filemanager/filemanager")
+                UIManager:broadcastEvent(Event:new("SetDimensions", new_size))
+                UIManager:broadcastEvent(Event:new("ScreenResize", new_size))
+                UIManager:broadcastEvent(Event:new("RedrawCurrentPage"))
+                if FileManager.instance then
+                    FileManager.instance:reinit(FileManager.instance.path,
+                        FileManager.instance.focused_file)
+                end
             elseif ev.code == C.APP_CMD_RESUME then
                 if not android.prop.brokenLifecycle then
                     UIManager:broadcastEvent(Event:new("Resume"))
