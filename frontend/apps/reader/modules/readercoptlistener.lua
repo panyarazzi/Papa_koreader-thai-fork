@@ -35,8 +35,11 @@ function ReaderCoptListener:onReadSettings(config)
     self.battery = G_reader_settings:readSetting("cre_header_battery", 1)
     self.battery_percent = G_reader_settings:readSetting("cre_header_battery_percent", 0)
     self.chapter_marks = G_reader_settings:readSetting("cre_header_chapter_marks", 1)
+    -- Optional chapter metadata in the alternative status bar.
+    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 0)
+    self.chapter_page_progress = G_reader_settings:readSetting("cre_header_chapter_page_progress", 0)
 
-    self.document._document:setIntProperty("window.status.title", self.title)
+    self.document._document:setIntProperty("window.status.title", (self.title == 1 or self.chapter_title == 1) and 1 or 0)
     self.document._document:setIntProperty("window.status.author", self.author)
     self.document._document:setIntProperty("window.status.clock", self.clock)
     self.document._document:setIntProperty("window.status.pos.page.number", self.page_number)
@@ -50,6 +53,7 @@ function ReaderCoptListener:onReadSettings(config)
     -- if we have to display any chunk of it
     self.page_info_override = self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1
         or (self.battery == 1 and self.battery_percent == 1) -- don't forget a sole battery
+
     self.document:setPageInfoOverride("") -- an empty string lets crengine display its own page info
 
     self:onTimeFormatChanged()
@@ -75,6 +79,33 @@ function ReaderCoptListener:onReadSettings(config)
     self:rescheduleHeaderRefreshIfNeeded() -- schedule (or not) first refresh
 end
 
+function ReaderCoptListener:getBookTitle()
+    local title = self.ui.doc_props.display_title
+    if not title or title == "" then
+        title = self.ui.doc_props.title
+    end
+    return title
+end
+
+function ReaderCoptListener:updateChapterTitle(pageno, book_title)
+    local title
+    if self.chapter_title == 1 then
+        pageno = pageno or self.view.footer.pageno
+        if pageno then
+            title = self.ui.toc:getTocTitleByPage(pageno)
+        end
+    end
+    if not title or title == "" then
+        title = book_title or self:getBookTitle()
+    end
+    if title and title ~= "" and title ~= self.current_alt_title then
+        self.current_alt_title = title
+        self.document:setAltDocumentProp("title", title)
+        return true
+    end
+    return false
+end
+
 function ReaderCoptListener:onReaderReady()
     -- custom metadata support for alt status bar and cre synthetic cover
     for prop_key in pairs(self.document.prop_to_cre_prop) do
@@ -85,11 +116,13 @@ function ReaderCoptListener:onReaderReady()
             self.document:setAltDocumentProp(prop_key, custom_prop_value)
         end
     end
+    self.current_alt_title = self:getBookTitle()
+    self:updateChapterTitle(self.view.footer.pageno)
 end
 
 function ReaderCoptListener:updatePageInfoOverride(pageno)
     if self.document.configurable.status_line ~= 0 or self.view.view_mode ~= "page" -- no alt status bar
-        or not (self.page_info_override or next(self.additional_header_content)) -- no items to override
+        or not (self.page_info_override or self.chapter_page_progress == 1 or next(self.additional_header_content)) -- no items to override
     then
         self.document:setPageInfoOverride("")
         return
@@ -141,6 +174,21 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
                 additional_content = additional_content .. "  " -- double spaces as crengine's own drawing
             end
         end
+    end
+
+    -- Add optional chapter-page progress to the native page-info area.
+    if self.chapter_page_progress == 1 then
+        local current = self.ui.toc:getChapterPagesDone(pageno)
+        -- Match ReaderFooter's page-number semantics (current page, not pages already read).
+        if current then
+            current = current + 1
+        elseif self.document:hasHiddenFlows() then
+            current = self.document:getPageNumberInFlow(pageno)
+        else
+            current = pageno
+        end
+        local total = self.ui.toc:getChapterPageCount(pageno) or self.document:getPageCount()
+        additional_content = additional_content .. string.format("%d/%d", current, total) .. "  "
     end
 
     local page_info = ""
@@ -204,11 +252,19 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
 end
 
 function ReaderCoptListener:onPageUpdate(pageno)
+    local title_changed = self:updateChapterTitle(pageno)
     self:updatePageInfoOverride(pageno)
+    if title_changed then
+        self:updateHeader()
+    end
 end
 
 function ReaderCoptListener:onPosUpdate(pos, pageno)
+    local title_changed = self:updateChapterTitle(pageno)
     self:updatePageInfoOverride(pageno)
+    if title_changed then
+        self:updateHeader()
+    end
 end
 
 function ReaderCoptListener:onUsePageLabelsUpdated()
@@ -220,7 +276,15 @@ function ReaderCoptListener:onBookMetadataChanged(prop_updated)
     -- custom metadata support for alt status bar and cre synthetic cover
     local prop_key = prop_updated and prop_updated.metadata_key_updated
     if prop_key and self.document.prop_to_cre_prop[prop_key] then
-        self.document:setAltDocumentProp(prop_key, prop_updated.doc_props[prop_key])
+        if prop_key == "title" then
+            self.current_alt_title = nil
+            self:updateChapterTitle(
+                self.view.footer.pageno,
+                prop_updated.doc_props.display_title or prop_updated.doc_props.title
+            )
+        else
+            self.document:setAltDocumentProp(prop_key, prop_updated.doc_props[prop_key])
+        end
         self:updateHeader()
     end
 end
@@ -345,15 +409,18 @@ function ReaderCoptListener:removeAdditionalHeaderContent(content_func)
 end
 
 function ReaderCoptListener:setAndSave(setting, property, value)
-    self.document._document:setIntProperty(property, value)
+    if property then
+        self.document._document:setIntProperty(property, value)
+    end
     G_reader_settings:saveSetting(setting, value)
     self:onUpdateHeader()
 end
 
 function ReaderCoptListener:onUpdateHeader()
+    self.document._document:setIntProperty("window.status.title", (self.title == 1 or self.chapter_title == 1) and 1 or 0)
+    self:updateChapterTitle(self.view.footer.pageno)
     self.page_info_override = self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1
         or (self.battery == 1 and self.battery_percent == 1) -- don't forget a sole battery
-
     self:updatePageInfoOverride()
     -- Have crengine redraw it (even if hidden by the menu at this time)
     self.ui.rolling:updateBatteryState()
@@ -403,7 +470,7 @@ function ReaderCoptListener:getAltStatusBarMenu()
                 end,
                 callback = function()
                     self.title = self.title == 0 and 1 or 0
-                    self:setAndSave("cre_header_title", "window.status.title", self.title)
+                    self:setAndSave("cre_header_title", nil, self.title)
                 end,
             },
             {
@@ -445,6 +512,27 @@ function ReaderCoptListener:getAltStatusBarMenu()
                     self.page_count = self.page_count == 0 and 1 or 0
                     self:setAndSave("cre_header_page_count", "window.status.pos.page.count", self.page_count)
                 end,
+            },
+            {
+                text = _("Chapter title"),
+                checked_func = function()
+                    return self.chapter_title == 1
+                end,
+                callback = function()
+                    self.chapter_title = self.chapter_title == 0 and 1 or 0
+                    self:setAndSave("cre_header_chapter_title", nil, self.chapter_title)
+                end,
+            },
+            {
+                text = _("Current page in chapter"),
+                checked_func = function()
+                    return self.chapter_page_progress == 1
+                end,
+                callback = function()
+                    self.chapter_page_progress = self.chapter_page_progress == 0 and 1 or 0
+                    self:setAndSave("cre_header_chapter_page_progress", nil, self.chapter_page_progress)
+                end,
+                separator = true,
             },
             {
                 text = _("Progress percentage"),
