@@ -128,6 +128,9 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
         or not (self.page_info_override or self.chapter_page_progress == 1 or next(self.additional_header_content)) -- no items to override
     then
         self.document:setPageInfoOverride("")
+        -- Chapter progress may temporarily force the page-number slot to be visible.
+        -- Restore the user's setting when no custom page-info content is displayed.
+        self.document._document:setIntProperty("window.status.pos.page.number", self.page_number)
         return
     end
 
