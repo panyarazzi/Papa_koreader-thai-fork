@@ -1,6 +1,9 @@
 name: android-apk
 
 on:
+  push:
+    branches:
+      - build/alt-status-bar-chapter-info-apk
   workflow_dispatch:
 
 defaults:
