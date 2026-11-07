@@ -96,7 +96,10 @@ function ReaderCoptListener:updateChapterTitle(pageno, book_title)
         end
     end
     if not title or title == "" then
-        title = book_title or self:getBookTitle()
+        if not book_title or book_title == "" then
+            book_title = self:getBookTitle()
+        end
+        title = book_title
     end
     if title and title ~= "" and title ~= self.current_alt_title then
         self.current_alt_title = title
