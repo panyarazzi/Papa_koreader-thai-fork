@@ -2,9 +2,10 @@
  * Thai Sarabun — Sarabun as the inherited body face, while retaining
  * explicit EPUB font declarations on headings and special selectors.
  *
- * No universal selector, no !important, and no forced p font-family:
- * EPUB declarations on h1-h6, p.strong, p.em, strong, em, centered
- * paragraphs, inline styles, and other more-specific rules remain effective.
+ * No universal selector and no !important. The ordinary p rule deliberately
+ * selects Sarabun at the same specificity as the EPUB's generic p rule;
+ * more-specific declarations on h1-h6, p.strong, p.em, strong, em, centered
+ * paragraphs, inline styles, and other special selectors remain effective.
  */
 
 body {
@@ -17,7 +18,7 @@ body {
 }
 
 p {
-    font-family: "Sarabun", sans-serif;
+    font-family: "Sarabun", "THSarabunNewest", sans-serif;
     text-align: justify;
     text-align-last: left;
     word-break: normal;
