@@ -17,6 +17,7 @@ body {
 }
 
 p {
+    font-family: "Sarabun", sans-serif;
     text-align: justify;
     text-align-last: left;
     word-break: normal;
