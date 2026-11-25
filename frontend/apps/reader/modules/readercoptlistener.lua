@@ -35,6 +35,7 @@ function ReaderCoptListener:onReadSettings(config)
     self.battery = G_reader_settings:readSetting("cre_header_battery", 1)
     self.battery_percent = G_reader_settings:readSetting("cre_header_battery_percent", 0)
     self.chapter_marks = G_reader_settings:readSetting("cre_header_chapter_marks", 1)
+    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 0)
 
     self.document._document:setIntProperty("window.status.title", self.title)
     self.document._document:setIntProperty("window.status.author", self.author)
@@ -84,6 +85,26 @@ function ReaderCoptListener:onReaderReady()
         if custom_prop_value ~= orig_prop_value then
             self.document:setAltDocumentProp(prop_key, custom_prop_value)
         end
+    end
+
+    -- Chapter title is supplied by KOReader's Lua ToC, not by a native
+    -- crengine metadata field. Keep it as additional header content so it
+    -- follows page changes and gracefully disappears for books without a ToC.
+    self.chapterTitleContent = function()
+        if self.chapter_title ~= 1 or not self.ui.toc or not self.view.footer then
+            return ""
+        end
+        local title = self.ui.toc:getTocTitleByPage(self.view.footer.pageno)
+        if not title or title == "" then
+            return ""
+        end
+        if title:match("^บทที่[%s%d๐-๙]") then
+            return title
+        end
+        return "บทที่ " .. title
+    end
+    if self.chapter_title == 1 then
+        self:addAdditionalHeaderContent(self.chapterTitleContent)
     end
 end
 
@@ -455,6 +476,26 @@ function ReaderCoptListener:getAltStatusBarMenu()
                     self.reading_percent = self.reading_percent == 0 and 1 or 0
                     self:setAndSave("cre_header_reading_percent", "window.status.pos.percent", self.reading_percent)
                 end,
+            },
+            {
+                text = _("Chapter title"),
+                help_text = _("Show the current table-of-contents entry, prefixed with บทที่, in the Alt Status Bar."),
+                checked_func = function()
+                    return self.chapter_title == 1
+                end,
+                callback = function()
+                    self.chapter_title = self.chapter_title == 0 and 1 or 0
+                    G_reader_settings:saveSetting("cre_header_chapter_title", self.chapter_title)
+                    if self.chapter_title == 1 then
+                        if self.chapterTitleContent then
+                            self:addAdditionalHeaderContent(self.chapterTitleContent)
+                        end
+                    elseif self.chapterTitleContent then
+                        self:removeAdditionalHeaderContent(self.chapterTitleContent)
+                    end
+                    self:onUpdateHeader()
+                end,
+                separator = true,
             },
             {
                 text = _("Chapter marks"),
