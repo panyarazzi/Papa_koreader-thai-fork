@@ -35,7 +35,7 @@ function ReaderCoptListener:onReadSettings(config)
     self.battery = G_reader_settings:readSetting("cre_header_battery", 1)
     self.battery_percent = G_reader_settings:readSetting("cre_header_battery_percent", 0)
     self.chapter_marks = G_reader_settings:readSetting("cre_header_chapter_marks", 1)
-    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 0)
+    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 1)
 
     self.document._document:setIntProperty("window.status.title", self.title)
     self.document._document:setIntProperty("window.status.author", self.author)
@@ -98,7 +98,7 @@ function ReaderCoptListener:onReaderReady()
         if not title or title == "" then
             return ""
         end
-        if title:match("^บทที่[%s%d๐-๙]") then
+        if title:match("^%s*บทที่") then
             return title
         end
         return "บทที่ " .. title
