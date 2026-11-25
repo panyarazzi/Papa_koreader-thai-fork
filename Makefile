@@ -138,6 +138,9 @@ endif
 	bash -O extglob -c '$(SYMLINK) $(OUTPUT_DIR_ARTIFACTS) $(INSTALL_DIR)/koreader/'
 ifneq (,$(EMULATE_READER))
 	@echo "[*] Install front spec only for the emulator"
+	# CI may restore an older install tree; remove its spec directory before relinking
+	# so tests always execute the checked-out source, not a stale cached copy.
+	rm -rf $(INSTALL_DIR)/koreader/spec/front
 	$(SYMLINK) spec $(INSTALL_DIR)/koreader/spec/front
 	$(SYMLINK) test $(INSTALL_DIR)/koreader/spec/front/unit/data
 	@echo "[*] Install launcher for the emulator"
