@@ -132,6 +132,7 @@ function ReaderCoptListener:onReaderReady()
     end
     if self.chapter_title == 1 then
         self:addAdditionalHeaderContent(self.chapterTitleContent)
+        self:onUpdateHeader()
     end
 end
 
