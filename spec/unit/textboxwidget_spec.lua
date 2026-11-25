@@ -68,9 +68,8 @@ describe("TextBoxWidget module", function()
         local end_x = getWordEndX(100, "into")
         tw:onHoldStartText(nil, {pos={x=50, y=100}})
         tw:onHoldReleaseText(function(w)
-            -- XText returns the selected words without the trailing separator.
-            -- The legacy non-XText path includes that separator.
-            assert.is.same(w, tw._xtext and 'welcomes Bar into' or 'welcomes Bar into ')
+            -- The selected word range excludes the trailing separator.
+            assert.is.same(w, 'welcomes Bar into')
         end, {pos={x=end_x, y=100}})
 
         tw:onHoldStartText(nil, {pos={x=20, y=80}})
