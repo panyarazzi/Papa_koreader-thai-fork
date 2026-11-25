@@ -5,7 +5,7 @@ concurrency:
   # Do not cancel an active architecture job when another run is queued.
   cancel-in-progress: false
 
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 defaults:
   run:
