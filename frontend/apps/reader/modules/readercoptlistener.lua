@@ -109,8 +109,23 @@ function ReaderCoptListener:onReaderReady()
 end
 
 function ReaderCoptListener:updatePageInfoOverride(pageno)
+    -- Evaluate additional content before deciding whether to override crengine's
+    -- native page info. A chapter-title callback may legitimately return an
+    -- empty string (for books without a usable ToC); in that case, keep the
+    -- native status-bar output instead of replacing it with a blank area.
+    local additional_content = ""
+    for dummy, v in ipairs(self.additional_header_content) do
+        local value = v()
+        if value and value ~= "" then
+            additional_content = additional_content .. value
+            if self.page_number == 1 or self.page_count == 1 then
+                additional_content = additional_content .. "  " -- double spaces as crengine's own drawing
+            end
+        end
+    end
+
     if self.document.configurable.status_line ~= 0 or self.view.view_mode ~= "page" -- no alt status bar
-        or not (self.page_info_override or next(self.additional_header_content)) -- no items to override
+        or not (self.page_info_override or additional_content ~= "") -- no actual items to override
     then
         self.document:setPageInfoOverride("")
         return
@@ -150,17 +165,6 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
             page_post = "]" .. flow
             percentage_pre = "["
             percentage_post = "]"
-        end
-    end
-
-    local additional_content = ""
-    for dummy, v in ipairs(self.additional_header_content) do
-        local value = v()
-        if value and value ~= "" then
-            additional_content = additional_content .. value
-            if self.page_number == 1 or self.page_count == 1 then
-                additional_content = additional_content .. "  " -- double spaces as crengine's own drawing
-            end
         end
     end
 
