@@ -94,8 +94,35 @@ function ReaderCoptListener:onReaderReady()
         if self.chapter_title ~= 1 or not self.ui.toc or not self.view.footer then
             return ""
         end
-        local title = self.ui.toc:getTocTitleByPage(self.view.footer.pageno)
-        if not title or title == "" then
+        local toc = self.ui.toc
+        local pageno = self.view.footer.pageno
+        if not pageno then
+            return ""
+        end
+
+        -- getTocIndexByPage() intentionally returns the first ToC entry on
+        -- a page. EPUBs with nested volume -> chapter navigation may place
+        -- both entries on the same page, so prefer the deepest entry on that
+        -- same page (the actual chapter) while preserving the ToC's ignored
+        -- level setting.
+        local skip_ignored = toc.toc_chapter_title_bind_to_ticks
+        local index = toc:getTocIndexByPage(pageno, skip_ignored)
+        local entry = index and toc.toc[index]
+        if entry and entry.page == pageno then
+            for i = index + 1, #toc.toc do
+                local candidate = toc.toc[i]
+                if candidate.page ~= pageno then
+                    break
+                end
+                if candidate.depth > entry.depth
+                    and (not skip_ignored or not toc.toc_ticks_ignored_levels[candidate.depth]) then
+                    entry = candidate
+                end
+            end
+        end
+
+        local title = entry and toc:cleanUpTocTitle(entry.title) or ""
+        if title == "" then
             return ""
         end
         if title:match("^%s*บทที่") then
