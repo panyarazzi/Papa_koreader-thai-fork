@@ -22,6 +22,17 @@ jobs:
           filter: tree:0
           show-progress: false
 
+      - name: Set up Java 17 for Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Confirm Java runtime
+        run: |
+          java -version
+          test "$(java -XshowSettings:properties -version 2>&1 | awk '/java.specification.version =/ {print $3; exit}')" = "17"
+
       - name: Install dependencies
         run: |
           sudo apt-get update
