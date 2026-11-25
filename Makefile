@@ -138,11 +138,24 @@ endif
 	bash -O extglob -c '$(SYMLINK) $(OUTPUT_DIR_ARTIFACTS) $(INSTALL_DIR)/koreader/'
 ifneq (,$(EMULATE_READER))
 	@echo "[*] Install front spec only for the emulator"
-	# CI may restore an older install tree; remove its spec directory before relinking
-	# so tests always execute the checked-out source, not a stale cached copy.
+	# The parent spec directory is a symlink into OUTPUT_DIR/spec.  Installing
+	# another relative symlink below it can resolve against the build tree and
+	# leave the test runner reading an older front-spec target.  Copy the
+	# checked-out frontend specs into that directory so the tested bytes are
+	# deterministic even when OUTPUT_DIR is restored from the CI cache.
 	rm -rf $(INSTALL_DIR)/koreader/spec/front
-	$(SYMLINK) spec $(INSTALL_DIR)/koreader/spec/front
+	install -d $(INSTALL_DIR)/koreader/spec/front
+	cp -R spec/. $(INSTALL_DIR)/koreader/spec/front/
+	# Test fixtures live in the separate test-data submodule.
+	rm -rf $(INSTALL_DIR)/koreader/spec/front/unit/data
 	$(SYMLINK) test $(INSTALL_DIR)/koreader/spec/front/unit/data
+	# Fail before running Busted if the installed spec differs from this checkout.
+	@cmp -s spec/unit/textboxwidget_spec.lua $(INSTALL_DIR)/koreader/spec/front/unit/textboxwidget_spec.lua || { \
+		echo "[!] Installed textboxwidget_spec.lua does not match the checked-out source"; \
+		diff -u spec/unit/textboxwidget_spec.lua $(INSTALL_DIR)/koreader/spec/front/unit/textboxwidget_spec.lua || true; \
+		exit 1; \
+	}
+	@echo "[*] Front spec source verified: $(INSTALL_DIR)/koreader/spec/front/unit/textboxwidget_spec.lua"
 	@echo "[*] Install launcher for the emulator"
 	cp $(COMMON_DIR)/koreader.sh $(INSTALL_DIR)/koreader/
 endif
