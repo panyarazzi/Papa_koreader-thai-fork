@@ -90,12 +90,12 @@ function ReaderCoptListener:onReaderReady()
     -- Chapter title is supplied by KOReader's Lua ToC, not by a native
     -- crengine metadata field. Keep it as additional header content so it
     -- follows page changes and gracefully disappears for books without a ToC.
-    self.chapterTitleContent = function()
+    self.chapterTitleContent = function(current_pageno)
         if self.chapter_title ~= 1 or not self.ui.toc or not self.view.footer then
             return ""
         end
         local toc = self.ui.toc
-        local pageno = self.view.footer.pageno
+        local pageno = current_pageno or self.view.footer.pageno
         if not pageno then
             return ""
         end
@@ -143,7 +143,7 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
     -- native status-bar output instead of replacing it with a blank area.
     local additional_content = ""
     for dummy, v in ipairs(self.additional_header_content) do
-        local value = v()
+        local value = v(pageno)
         if value and value ~= "" then
             additional_content = additional_content .. value
             if self.page_number == 1 or self.page_count == 1 then
