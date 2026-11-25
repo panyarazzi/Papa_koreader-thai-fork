@@ -18,7 +18,8 @@ describe("TextBoxWidget module", function()
         local function getWordEndX(y, word)
             local line_num = math.ceil(y / tw.line_height_px) + tw.virtual_line_num - 1
             local line = assert(tw.vertical_string_list[line_num])
-            local _, word_end = tw:_getLineText(line):find(word, 1, true)
+            local line_text = table.concat(tw.charlist, "", line.offset, line.end_offset)
+            local _, word_end = line_text:find(word, 1, true)
             assert.is_not_nil(word_end)
             local end_char_idx = line.offset + word_end - 1
             local x = 0
