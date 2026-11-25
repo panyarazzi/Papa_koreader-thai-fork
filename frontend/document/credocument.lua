@@ -31,7 +31,8 @@ local CreDocument = Document:extend{
 
     default_font = "Noto Serif",
     monospace_font = "Droid Sans Mono",
-    header_font = "Noto Sans",
+    -- Keep the CRengine Alt Status Bar consistent with the app UI font.
+    header_font = "Sarabun",
 
     prop_to_cre_prop = { -- see cre lvtinydom.h
         title        = "doc.title",
