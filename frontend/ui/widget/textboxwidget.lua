@@ -2224,6 +2224,20 @@ function TextBoxWidget:getXtextHighlightIndices(start_x, start_y, end_x, end_y)
     -- (50 is the nb of chars backward and ahead of selection indices
     -- to consider when looking for word boundaries)
     local word_start_idx, word_end_idx = self._xtext:getSelectedWordIndices(sel_start_idx, sel_end_idx, 50)
+    if word_start_idx and word_end_idx then
+        -- libunibreak may include the separator following the final word
+        -- (e.g. the space after "into"). Keep the highlight and callback
+        -- range on the selected text itself, not on trailing whitespace.
+        local selected_text = self._xtext:getText(word_start_idx, word_end_idx)
+        local trimmed_text = selected_text:gsub("%s+$", "")
+        if trimmed_text ~= selected_text then
+            local trimmed_char_count = #util.splitToChars(trimmed_text)
+            if trimmed_char_count == 0 then
+                return nil, nil
+            end
+            word_end_idx = word_start_idx + trimmed_char_count - 1
+        end
+    end
     return word_start_idx, word_end_idx
 end
 
