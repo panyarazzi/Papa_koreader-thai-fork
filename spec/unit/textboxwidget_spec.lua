@@ -24,6 +24,21 @@ describe("TextBoxWidget module", function()
             local _, word_end = line_text:find(word, 1, true)
             assert.is_not_nil(word_end)
             local end_char_idx = line.offset + word_end - 1
+
+            if tw._xtext then
+                -- XText does not populate char_width. Shape the line and use
+                -- the actual glyph cluster bounds to place the hold point.
+                tw:_shapeLine(line)
+                for _, glyph in ipairs(line.xglyphs or {}) do
+                    if glyph.is_cluster_start
+                            and end_char_idx >= glyph.text_index
+                            and end_char_idx < glyph.text_index + glyph.cluster_len then
+                        return (glyph.x0 + glyph.x1) / 2
+                    end
+                end
+                error("Could not find the XText glyph cluster for the word endpoint")
+            end
+
             local x = 0
             for idx = line.offset, end_char_idx do
                 x = x + tw.char_width[tw.charlist[idx]] + (tw.idx_pad[idx] or 0)
