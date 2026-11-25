@@ -47,15 +47,16 @@ describe("TextBoxWidget module", function()
             assert.is.same(w, 'Bar')
         end, {pos=pos})
 
+        local end_x = getWordEndX(100, "into")
         tw:onHoldStartText(nil, {pos={x=50, y=100}})
         tw:onHoldReleaseText(function(w)
             assert.is.same(w, 'welcomes Bar into')
-        end, {pos={x=240, y=100}})
+        end, {pos={x=end_x, y=100}})
 
         tw:onHoldStartText(nil, {pos={x=20, y=80}})
         tw:onHoldReleaseText(function(w)
             assert.is.same(w, 'Bar.\nFoo welcomes Bar into')
-        end, {pos={x=240, y=100}})
+        end, {pos={x=end_x, y=100}})
 
         --[[
         -- No more used, not implemented when use_xtext=true
