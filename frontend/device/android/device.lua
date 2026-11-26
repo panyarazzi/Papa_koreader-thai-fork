@@ -253,7 +253,10 @@ function Device:init()
         xiaomi_reader = true,
     }
 
-    if models[android.prop.model] then
+    -- Meebook G7S reports the same volume-key codes in both orientations.
+    -- Its physical page buttons are fixed to the chassis, so applying the
+    -- generic 180-degree swap would reverse their page-turn actions.
+    if models[android.prop.model] or android.prop.model:lower() == "g7s" then
         self.input:disableRotationMap()
     end
 
