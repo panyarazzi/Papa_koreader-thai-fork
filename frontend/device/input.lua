@@ -786,6 +786,14 @@ function Input:handleKeyBoardEv(ev)
         --       And we *definitely* don't want to flood the Event queue with useless SleepCover repeats!
         if keycode == "Up" or keycode == "Down" or keycode == "Left" or keycode == "Right"
          or keycode == "RPgBack" or keycode == "RPgFwd" or keycode == "LPgBack" or keycode == "LPgFwd" then
+            -- Android devices may expose physical page buttons without supporting
+            -- the platform-level key-repeat toggle. Allow page-turn repeats to be
+            -- suppressed at the input layer in that case.
+            if (keycode == "RPgBack" or keycode == "RPgFwd"
+             or keycode == "LPgBack" or keycode == "LPgFwd")
+             and G_reader_settings:isTrue("android_disable_page_turn_repeat") then
+                return
+            end
             --- @fixme Crappy event staggering!
             --
             -- The Forma & co repeats every 80ms after a 400ms delay, and 500ms roughly corresponds to a flashing update,
