@@ -6,6 +6,7 @@ on:
       - work/ui-font-only-test
       - work/alt-status-chapter-title
       - work/apk18-apk14-two-fixes
+      - work/apk19-alt-status-top-offset
   workflow_dispatch:
 defaults:
   run:
