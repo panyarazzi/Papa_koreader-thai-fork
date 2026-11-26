@@ -47,7 +47,6 @@ local order = {
     },
     device = {
         "keyboard_layout",
-        "android_disable_page_turn_repeat", -- Android physical page-button hold behavior
         "external_keyboard",
         "font_ui_fallbacks",
         "----------------------------",
