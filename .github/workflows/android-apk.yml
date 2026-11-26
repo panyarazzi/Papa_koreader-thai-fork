@@ -7,6 +7,7 @@ on:
       - work/alt-status-chapter-title
       - work/apk18-apk14-two-fixes
       - work/apk19-alt-status-top-offset
+      - work/apk24-alt-status-top-offset-10dp
   workflow_dispatch:
 defaults:
   run:
