@@ -310,6 +310,11 @@ function CreDocument:setupDefaultView()
     -- adjust font sizes according to dpi set in canvas context
     self._document:adjustFontSizes(CanvasContext:getDPI())
 
+    -- Move the complete CRE top status bar down by approximately 10 dp.
+    -- CRengine uses screen pixels, so convert the dp offset using the current DPI.
+    self._document:setIntProperty("crengine.page.header.top.offset",
+        math.floor(10 * CanvasContext:getDPI() / 160 + 0.5))
+
     -- set top status bar font size
     if G_reader_settings:has("cre_header_status_font_size") then
         self._document:setIntProperty("crengine.page.header.font.size",
