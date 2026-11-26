@@ -5,6 +5,7 @@ on:
     branches:
       - work/ui-font-only-test
       - work/alt-status-chapter-title
+      - work/android-key-repeat-control
   workflow_dispatch:
 defaults:
   run:
