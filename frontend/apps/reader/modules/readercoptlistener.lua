@@ -35,6 +35,7 @@ function ReaderCoptListener:onReadSettings(config)
     self.battery = G_reader_settings:readSetting("cre_header_battery", 1)
     self.battery_percent = G_reader_settings:readSetting("cre_header_battery_percent", 0)
     self.chapter_marks = G_reader_settings:readSetting("cre_header_chapter_marks", 1)
+    self.chapter_title = G_reader_settings:readSetting("cre_header_chapter_title", 0)
 
     self.document._document:setIntProperty("window.status.title", self.title)
     self.document._document:setIntProperty("window.status.author", self.author)
@@ -89,7 +90,7 @@ end
 
 function ReaderCoptListener:updatePageInfoOverride(pageno)
     if self.document.configurable.status_line ~= 0 or self.view.view_mode ~= "page" -- no alt status bar
-        or not (self.page_info_override or next(self.additional_header_content)) -- no items to override
+        or not (self.page_info_override or self.chapter_title == 1 or next(self.additional_header_content)) -- no items to override
     then
         self.document:setPageInfoOverride("")
         return
@@ -133,9 +134,18 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
     end
 
     local additional_content = ""
+    if self.chapter_title == 1 then
+        local chapter_title = self.ui.toc:getTocTitleByPage(pageno)
+        if chapter_title and chapter_title ~= "" then
+            additional_content = chapter_title
+        end
+    end
     for dummy, v in ipairs(self.additional_header_content) do
         local value = v()
         if value and value ~= "" then
+            if additional_content ~= "" then
+                additional_content = additional_content .. "  "
+            end
             additional_content = additional_content .. value
             if self.page_number == 1 or self.page_count == 1 then
                 additional_content = additional_content .. "  " -- double spaces as crengine's own drawing
@@ -404,6 +414,17 @@ function ReaderCoptListener:getAltStatusBarMenu()
                 callback = function()
                     self.title = self.title == 0 and 1 or 0
                     self:setAndSave("cre_header_title", "window.status.title", self.title)
+                end,
+            },
+            {
+                text = _("Chapter title"),
+                checked_func = function()
+                    return self.chapter_title == 1
+                end,
+                callback = function()
+                    self.chapter_title = self.chapter_title == 0 and 1 or 0
+                    G_reader_settings:saveSetting("cre_header_chapter_title", self.chapter_title)
+                    self:onUpdateHeader()
                 end,
             },
             {
