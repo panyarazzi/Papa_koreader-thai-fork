@@ -253,7 +253,13 @@ function ReaderCoptListener:onBookMetadataChanged(prop_updated)
     local prop_key = prop_updated and prop_updated.metadata_key_updated
     if prop_key and self.document.prop_to_cre_prop[prop_key] then
         self.document:setAltDocumentProp(prop_key, prop_updated.doc_props[prop_key])
-        self:updateHeader()
+        if prop_key == "title" then
+            self.base_alt_title = self.ui.doc_props.display_title or self.ui.doc_props.title
+                or prop_updated.doc_props[prop_key] or self.base_alt_title
+            self:updateChapterTitle()
+        else
+            self:updateHeader()
+        end
     end
 end
 
