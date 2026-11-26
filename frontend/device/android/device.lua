@@ -243,6 +243,10 @@ function Device:init()
         end,
     }
 
+    -- Meebook G7S physical page buttons emit Linux key codes 24/25.
+    -- Suppress their hold-repeat events in Input without affecting other devices.
+    self.input.disable_g7s_page_key_repeat = android.prop.model:lower() == "g7s"
+
     -- disable translation for specific models, where media keys follow gravity, see https://github.com/koreader/koreader/issues/12423
     local models = {
         go7 = true,
