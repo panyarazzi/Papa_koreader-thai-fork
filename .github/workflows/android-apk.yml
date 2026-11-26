@@ -6,6 +6,7 @@ on:
       - work/ui-font-only-test
       - work/alt-status-chapter-title
       - work/android-key-repeat-control
+      - work/android-key-repeat-reviewed
   workflow_dispatch:
 defaults:
   run:
