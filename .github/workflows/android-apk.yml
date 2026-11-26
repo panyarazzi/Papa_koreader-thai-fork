@@ -1,8 +1,10 @@
 name: android-apk
 
 on:
+  push:
+    branches:
+      - work/ui-font-only-test
   workflow_dispatch:
-
 defaults:
   run:
     shell: bash
