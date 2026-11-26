@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - work/epub-compat-altbar-sarabun-ui
+      - work/apk23-alt-status-top-offset-10dp
 
 defaults:
   run:
@@ -71,6 +72,14 @@ jobs:
           sed -i \
             's/ac_cv_func_iconv_open=yes/ac_cv_func_iconv_open=yes datrie_cv_langinfo_codeset=yes/' \
             base/thirdparty/libdatrie/CMakeLists.txt
+
+      - name: Apply CRengine Alt Status top offset
+        run: |
+          set -euo pipefail
+          crengine_dir="base/thirdparty/kpvcrlib/crengine"
+          test -f "${crengine_dir}/crengine/src/lvdocview.cpp"
+          git -C "${crengine_dir}" apply --check "$GITHUB_WORKSPACE/patches/crengine-alt-status-top-offset.patch"
+          git -C "${crengine_dir}" apply "$GITHUB_WORKSPACE/patches/crengine-alt-status-top-offset.patch"
 
       - name: Build Android ARM64 APK
         run: |
