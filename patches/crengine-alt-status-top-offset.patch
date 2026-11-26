@@ -1,11 +1,12 @@
 diff --git a/crengine/include/lvdocviewprops.h b/crengine/include/lvdocviewprops.h
 --- a/crengine/include/lvdocviewprops.h
 +++ b/crengine/include/lvdocviewprops.h
-@@ -25,3 +25,4 @@
+@@ -25,4 +25,5 @@
  #define PROP_STATUS_FONT_COLOR       "crengine.page.header.font.color"
  #define PROP_STATUS_FONT_FACE        "crengine.page.header.font.face"
  #define PROP_STATUS_FONT_SIZE        "crengine.page.header.font.size"
 +#define PROP_STATUS_HEADER_TOP_OFFSET "crengine.page.header.top.offset"
+ #define PROP_PAGE_MARGIN_TOP         "crengine.page.margin.top"
  
 diff --git a/crengine/src/lvdocview.cpp b/crengine/src/lvdocview.cpp
 --- a/crengine/src/lvdocview.cpp
@@ -19,7 +20,7 @@ diff --git a/crengine/src/lvdocview.cpp b/crengine/src/lvdocview.cpp
 +	return h + HEADER_MARGIN + topOffset;
  }
  
-@@ -1375,6 +1376,7 @@ void LVDocView::getPageHeaderRectangle(int pageIndex, lvRect & headerRc, bool mergeTwoHeaders) {
+@@ -1375,6 +1375,7 @@ void LVDocView::getPageHeaderRectangle(int pageIndex, lvRect & headerRc, bool mergeTwoHeaders) {
  	} else {
  		int h = getPageHeaderHeight();
 +		int topOffset = m_props->getIntDef(PROP_STATUS_HEADER_TOP_OFFSET, 0);
