@@ -138,6 +138,9 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
         local chapter_title = self.ui.toc:getTocTitleByPage(pageno)
         if chapter_title and chapter_title ~= "" then
             additional_content = chapter_title
+            if self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1 then
+                additional_content = additional_content .. "  "
+            end
         end
     end
     for dummy, v in ipairs(self.additional_header_content) do
