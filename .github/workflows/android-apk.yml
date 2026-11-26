@@ -5,6 +5,7 @@ on:
     branches:
       - work/ui-font-only-test
       - work/alt-status-chapter-title
+      - work/apk18-apk14-two-fixes
   workflow_dispatch:
 defaults:
   run:
