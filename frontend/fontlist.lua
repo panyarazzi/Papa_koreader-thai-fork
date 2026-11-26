@@ -146,18 +146,27 @@ function FontList:_readList(dir, mark)
         local file_type = file:lower():match(".+%.([^.]+)") or ""
         if not font_exts[file_type] or isInFontsBlacklist(file) then return end
 
-        -- Add it to the list
-        table.insert(self.fontlist, path)
-
-        -- And into cached info table
-        mark[path] = true
-        if self.fontinfo[path] and (self.fontinfo[path].change == attr.change) then
+        -- Only expose fonts that FreeType can actually inspect. Previously,
+        -- paths were added to fontlist before collectFaceInfo() ran, so an
+        -- unreadable/unsupported file was still passed to crengine.registerFont()
+        -- and produced a "cannot register font" error during engine startup.
+        local cached = self.fontinfo[path]
+        if cached and cached.change == attr.change then
+            table.insert(self.fontlist, path)
+            mark[path] = true
             return
         end
+
         local fi = collectFaceInfo(path)
-        if not fi or not next(fi) then return end
+        if not fi or not next(fi) then
+            logger.warn("FontList: skipping font with no readable face:", path)
+            return
+        end
+
         fi.change = attr.change
         self.fontinfo[path] = fi
+        table.insert(self.fontlist, path)
+        mark[path] = true
         mark.cache_dirty = true
     end)
 end
