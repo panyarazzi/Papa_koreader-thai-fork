@@ -66,6 +66,7 @@ local ffiUtil  = require("ffi/util")
 local filemanagerutil = require("apps/filemanager/filemanagerutil")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local Diagnostics = require("papadiagnostics")
 local time = require("ui/time")
 local util = require("util")
 local _ = require("gettext")
@@ -111,6 +112,7 @@ function ReaderUI:registerPostReaderReadyCallback(callback)
 end
 
 function ReaderUI:init()
+    Diagnostics:record("reader", "READER_INIT_BEGIN", "document_provider=" .. tostring(self.document and self.document.provider))
     self.active_widgets = {}
 
     -- cap screen refresh on pan to 2 refreshes per second
@@ -609,6 +611,7 @@ end
 ---        This is the *only* safe way to instantiate a new ReaderUI instance!
 ---        (i.e., don't look at the testsuite, which resorts to all kinds of nasty hacks).
 function ReaderUI:showReader(file, provider, seamless, is_provider_forced, after_open_callback)
+    Diagnostics:record("reader", "SHOW_READER", "provider=" .. tostring(provider and provider.name or provider))
     logger.dbg("show reader ui")
 
     if lfs.attributes(file, "mode") ~= "file" then
@@ -732,6 +735,7 @@ function ReaderUI:showReaderCoroutine(file, provider, seamless)
 end
 
 function ReaderUI:doShowReader(file, provider, seamless)
+    Diagnostics:record("reader", "DO_SHOW_READER_BEGIN", "provider=" .. tostring(provider and provider.name or provider))
     if seamless then
         UIManager:avoidFlashOnNextRepaint()
     end
@@ -741,7 +745,10 @@ function ReaderUI:doShowReader(file, provider, seamless)
         logger.warn("ReaderUI instance mismatch! Tried to spin up a new instance, while we still have an existing one:", tostring(ReaderUI.instance))
         ReaderUI.instance:onClose()
     end
+    local document_started = os.clock()
     local document = DocumentRegistry:openDocument(file, provider)
+    Diagnostics:record("reader", "DOCUMENT_PROVIDER_OPEN",
+        "success=" .. tostring(document ~= nil) .. " elapsed_ms=" .. math.floor((os.clock() - document_started) * 1000))
     if not document then
         UIManager:show(InfoMessage:new{
             text = _("No reader engine for this file or invalid file.")

@@ -526,6 +526,50 @@ To:
         sub_item_table = PluginLoader:genPluginManagerSubItem(),
     }
     self.menu_items.patch_management = dofile("frontend/ui/elements/patch_management.lua")
+    self.menu_items.papa_diagnostics = {
+        text = _("Papa KOReader diagnostics"),
+        sub_item_table = {
+            {
+                text_func = function()
+                    local diag = require("papadiagnostics")
+                    return diag:isActive() and _("Stop diagnostic capture") or _("Start diagnostic capture")
+                end,
+                callback = function(touchmenu_instance)
+                    local diag = require("papadiagnostics")
+                    if diag:isActive() then
+                        local folder = diag:stop()
+                        UIManager:show(InfoMessage:new{ text = T(_("Capture stopped. Files: %1"), folder or _("unavailable")) })
+                    else
+                        local folder, err = diag:start()
+                        UIManager:show(InfoMessage:new{
+                            text = folder and T(_("Capture started. Session: %1"), folder)
+                                or T(_("Could not start capture: %1"), err or _("unknown error")),
+                        })
+                    end
+                    if touchmenu_instance then touchmenu_instance:updateItems() end
+                end,
+            },
+            {
+                text = _("Mark current event"),
+                enabled_func = function() return require("papadiagnostics"):isActive() end,
+                callback = function()
+                    require("papadiagnostics"):mark()
+                    UIManager:show(InfoMessage:new{ text = _("Diagnostic marker recorded.") })
+                end,
+            },
+            {
+                text = _("Finalize diagnostic parts"),
+                callback = function()
+                    local folder = require("papadiagnostics"):exportInfo()
+                    UIManager:show(InfoMessage:new{
+                        text = folder and T(_("Diagnostic parts saved separately in: %1"), folder)
+                            or _("No diagnostic session is available."),
+                    })
+                end,
+            },
+        },
+    }
+
     self.menu_items.advanced_settings = {
         text = _("Advanced settings"),
         callback = function()

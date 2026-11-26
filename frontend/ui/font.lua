@@ -6,6 +6,7 @@ local FontList = require("fontlist")
 local Freetype = require("ffi/freetype")
 local Screen = require("device").screen
 local logger = require("logger")
+local Diagnostics = require("papadiagnostics")
 local util = require("util")
 
 -- Known regular (and italic) fonts with an available bold font file
@@ -293,6 +294,9 @@ function Font:getFace(font, size, faceindex)
         end
     else
         -- Build face size if not found
+        local diag_started = os.clock()
+        Diagnostics:record("ui_font", "UI_FONT_CACHE_MISS",
+            "role=" .. tostring(font) .. " file=" .. tostring(realname) .. " size=" .. tostring(size))
         local builtin_font_location = FontList.fontdir.."/"..realname
         local ok, ftsize = pcall(Freetype.newFaceSize, builtin_font_location, size, faceindex)
 
@@ -332,6 +336,9 @@ function Font:getFace(font, size, faceindex)
             is_real_bold = is_real_bold,
         }
         self.faces[hash] = face_obj
+        Diagnostics:record("ui_font", "UI_FONT_FACE_READY",
+            "role=" .. tostring(font) .. " file=" .. tostring(realname)
+            .. " elapsed_ms=" .. math.floor((os.clock() - diag_started) * 1000))
 
         -- Callback to be used by libkoreader-xtext.so to get Freetype
         -- instantiated fallback fonts when needed for shaping text

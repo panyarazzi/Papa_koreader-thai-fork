@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - work/epub-compat-altbar-sarabun-ui
+      - work/diagnostics-capture-tool
 
 defaults:
   run:

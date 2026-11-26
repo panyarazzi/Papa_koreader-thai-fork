@@ -5,6 +5,7 @@ local Geom = require("ui/geometry")
 local InfoMessage = require("ui/widget/infomessage")
 local UIManager = require("ui/uimanager")
 local logger = require("logger")
+local Diagnostics = require("papadiagnostics")
 local T = require("ffi/util").template
 local _ = require("gettext")
 
@@ -91,6 +92,9 @@ function ReaderCoptListener:onReaderReady()
     -- crengine metadata field. Keep it as additional header content so it
     -- follows page changes and gracefully disappears for books without a ToC.
     self.chapterTitleContent = function(current_pageno)
+        Diagnostics:record("altbar", "CHAPTER_TITLE_CALLBACK",
+            "page=" .. tostring(current_pageno or (self.view.footer and self.view.footer.pageno))
+            .. " toc_entries=" .. tostring(self.ui.toc and #self.ui.toc.toc or 0))
         if self.chapter_title ~= 1 or not self.ui.toc or not self.view.footer then
             return ""
         end
@@ -137,6 +141,7 @@ function ReaderCoptListener:onReaderReady()
 end
 
 function ReaderCoptListener:updatePageInfoOverride(pageno)
+    Diagnostics:record("altbar", "PAGE_INFO_OVERRIDE", "page=" .. tostring(pageno or (self.view.footer and self.view.footer.pageno)))
     -- Evaluate additional content before deciding whether to override crengine's
     -- native page info. A chapter-title callback may legitimately return an
     -- empty string (for books without a usable ToC); in that case, keep the

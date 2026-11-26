@@ -8,6 +8,7 @@ local C = ffi.C
 local FFIUtil = require("ffi/util")
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local Diagnostics = require("papadiagnostics")
 local util = require("util")
 local _ = require("gettext")
 local T = FFIUtil.template
@@ -161,8 +162,13 @@ function Device:init()
                 -- orientation and size changes
                 if android.screen.width ~= android.getScreenWidth()
                 or android.screen.height ~= android.getScreenHeight() then
+                    local diag_started = os.clock()
+                    Diagnostics:record("android_window", "APP_CMD_CONFIG_CHANGED",
+                        "old=" .. tostring(android.screen.width) .. "x" .. tostring(android.screen.height))
                     this.device.screen:resize()
                     local new_size = this.device.screen:getSize()
+                    Diagnostics:record("android_window", "CONFIG_RESIZE_DONE",
+                        "new=" .. tostring(new_size) .. " elapsed_ms=" .. math.floor((os.clock() - diag_started) * 1000))
                     logger.info("Resizing screen to", new_size)
                     local FileManager = require("apps/filemanager/filemanager")
                     UIManager:broadcastEvent(Event:new("SetDimensions", new_size))
@@ -180,8 +186,13 @@ function Device:init()
                 -- configuration change. Refresh the framebuffer and UI geometry
                 -- when NativeActivity reports a content/window size change.
                 logger.info("Android content/window geometry changed", ev.code)
+                local diag_started = os.clock()
+                Diagnostics:record("android_window", "CONTENT_OR_WINDOW_CHANGED", "event_code=" .. tostring(ev.code))
                 this.device.screen:resize()
                 local new_size = this.device.screen:getSize()
+                Diagnostics:record("android_window", "CONTENT_RESIZE_DONE",
+                    "event_code=" .. tostring(ev.code) .. " size=" .. tostring(new_size)
+                    .. " elapsed_ms=" .. math.floor((os.clock() - diag_started) * 1000))
                 logger.info("Refreshing screen geometry to", new_size)
                 local FileManager = require("apps/filemanager/filemanager")
                 UIManager:broadcastEvent(Event:new("SetDimensions", new_size))

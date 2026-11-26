@@ -12,6 +12,7 @@ local C = ffi.C
 local cre -- Delayed loading
 local lfs = require("libs/libkoreader-lfs")
 local logger = require("logger")
+local Diagnostics = require("papadiagnostics")
 local lru = require("ffi/lru")
 local time = require("ui/time")
 
@@ -101,6 +102,7 @@ function CreDocument.cacheInit()
 end
 
 function CreDocument:engineInit()
+    Diagnostics:record("crengine", "ENGINE_INIT", "already_initialized=" .. tostring(engine_initialized))
     if not engine_initialized then
         cre = require("libs/libkoreader-cre")
 
@@ -327,7 +329,9 @@ end
 
 function CreDocument:loadDocument(full_document)
     if not self._loaded then
+        local diag_started = os.clock()
         local only_metadata = full_document == false
+        Diagnostics:record("crengine", "LOAD_DOCUMENT_BEGIN", "metadata_only=" .. tostring(only_metadata))
         logger.dbg("CreDocument: loading document...")
         if self._document:loadDocument(self.file, only_metadata) then
             self._loaded = true
@@ -335,6 +339,8 @@ function CreDocument:loadDocument(full_document)
         else
             logger.dbg("CreDocument: loading failed.")
         end
+        Diagnostics:record("crengine", "LOAD_DOCUMENT_END",
+            "loaded=" .. tostring(self._loaded) .. " elapsed_ms=" .. math.floor((os.clock() - diag_started) * 1000))
     end
     return self._loaded
 end
@@ -348,10 +354,14 @@ function CreDocument:render()
     --     < G_defaults:readSetting("DCREREADER_TWO_PAGE_THRESHOLD") then
     --     self:setVisiblePageCount(1)
     -- end
+    local diag_started = os.clock()
+    Diagnostics:record("crengine", "RENDER_BEGIN", "provider=crengine")
     logger.dbg("CreDocument: rendering document...")
     self._document:renderDocument()
     self.info.doc_height = self._document:getFullHeight()
     self.been_rendered = true
+    Diagnostics:record("crengine", "RENDER_END",
+        "height=" .. tostring(self.info.doc_height) .. " elapsed_ms=" .. math.floor((os.clock() - diag_started) * 1000))
     logger.dbg("CreDocument: rendering done.")
 end
 
