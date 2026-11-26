@@ -10,6 +10,7 @@ local util = require("util")
 
 -- Known regular (and italic) fonts with an available bold font file
 local _bold_font_variant = {}
+_bold_font_variant["Sarabun/Sarabun-Regular.ttf"] = "Sarabun/Sarabun-Bold.ttf"
 _bold_font_variant["NotoSans-Regular.ttf"] = "NotoSans-Bold.ttf"
 _bold_font_variant["NotoSans-Italic.ttf"] = "NotoSans-BoldItalic.ttf"
 _bold_font_variant["NotoSansArabicUI-Regular.ttf"] = "NotoSansArabicUI-Bold.ttf"
@@ -39,48 +40,37 @@ local Font = {
 
     fontmap = {
         -- default font for menu contents
-        cfont = "NotoSans-Regular.ttf",
+        cfont = "Sarabun/Sarabun-Regular.ttf",
         -- default font for title
-        --tfont = "NimbusSanL-BoldItal.cff",
-        tfont = "NotoSans-Bold.ttf",
-        smalltfont = "NotoSans-Bold.ttf",
-        x_smalltfont = "NotoSans-Bold.ttf",
+        tfont = "Sarabun/Sarabun-Bold.ttf",
+        smalltfont = "Sarabun/Sarabun-Bold.ttf",
+        x_smalltfont = "Sarabun/Sarabun-Bold.ttf",
         -- default font for footer
-        ffont = "NotoSans-Regular.ttf",
-        smallffont = "NotoSans-Regular.ttf",
-        largeffont = "NotoSans-Regular.ttf",
+        ffont = "Sarabun/Sarabun-Regular.ttf",
+        smallffont = "Sarabun/Sarabun-Regular.ttf",
+        largeffont = "Sarabun/Sarabun-Regular.ttf",
 
         -- default font for reading position info
-        rifont = "NotoSans-Regular.ttf",
+        rifont = "Sarabun/Sarabun-Regular.ttf",
 
         -- default font for pagination display
-        pgfont = "NotoSans-Regular.ttf",
+        pgfont = "Sarabun/Sarabun-Regular.ttf",
 
-        -- selectmenu: font for item shortcut
-        scfont = "DroidSansMono.ttf",
+        -- selectmenu shortcuts and help keys use Sarabun for consistent UI typography
+        scfont = "Sarabun/Sarabun-Regular.ttf",
+        hpkfont = "Sarabun/Sarabun-Regular.ttf",
+        hfont = "Sarabun/Sarabun-Regular.ttf",
 
-        -- help page: font for displaying keys
-        hpkfont = "DroidSansMono.ttf",
-        -- font for displaying help messages
-        hfont = "NotoSans-Regular.ttf",
+        -- input and code widgets also use the app UI font
+        infont = "Sarabun/Sarabun-Regular.ttf",
+        smallinfont = "Sarabun/Sarabun-Regular.ttf",
 
-        -- font for displaying input content
-        -- we have to use mono here for better distance controlling
-        infont = "DroidSansMono.ttf",
-        -- small mono font for displaying code
-        smallinfont = "DroidSansMono.ttf",
-
-        -- font for info messages
-        infofont = "NotoSans-Regular.ttf",
-
-        -- small font for info messages
-        smallinfofont = "NotoSans-Regular.ttf",
-        -- small bold font for info messages
-        smallinfofontbold = "NotoSans-Bold.ttf",
-        -- extra small font for info messages
-        x_smallinfofont = "NotoSans-Regular.ttf",
-        -- extra extra small font for info messages
-        xx_smallinfofont = "NotoSans-Regular.ttf",
+        -- info messages
+        infofont = "Sarabun/Sarabun-Regular.ttf",
+        smallinfofont = "Sarabun/Sarabun-Regular.ttf",
+        smallinfofontbold = "Sarabun/Sarabun-Bold.ttf",
+        x_smallinfofont = "Sarabun/Sarabun-Regular.ttf",
+        xx_smallinfofont = "Sarabun/Sarabun-Regular.ttf",
     },
     sizemap = {
         cfont = 24,
