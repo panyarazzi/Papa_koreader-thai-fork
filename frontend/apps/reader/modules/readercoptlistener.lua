@@ -82,13 +82,41 @@ function ReaderCoptListener:onReaderReady()
         local orig_prop_value = self.ui.doc_settings:readSetting(prop_key)
         local custom_prop_key = prop_key == "title" and "display_title" or prop_key
         local custom_prop_value = self.ui.doc_props[custom_prop_key]
+        if prop_key == "title" then
+            -- Keep the document title so we can restore it when chapter-title mode is disabled.
+            self.base_alt_title = custom_prop_value or orig_prop_value
+                or (self.document:getDocumentProps() or {}).title or ""
+        end
         if custom_prop_value ~= orig_prop_value then
             self.document:setAltDocumentProp(prop_key, custom_prop_value)
         end
     end
 end
 
+-- Put the current chapter title in crengine's existing document-title slot.
+-- Do not append it to the page-number/percentage override.
+function ReaderCoptListener:updateChapterTitle(pageno)
+    local title = self.base_alt_title or ""
+    if self.chapter_title == 1 and self.document.configurable.status_line == 0
+            and self.view.view_mode == "page" then
+        pageno = pageno or (self.view.footer and self.view.footer.pageno)
+        if pageno and self.ui.toc then
+            local chapter_title = self.ui.toc:getTocTitleByPage(pageno)
+            if chapter_title and chapter_title ~= "" then
+                title = chapter_title
+            end
+        end
+    end
+
+    if title ~= self.current_alt_title then
+        self.document:setAltDocumentProp("title", title)
+        self.current_alt_title = title
+        self:updateHeader()
+    end
+end
+
 function ReaderCoptListener:updatePageInfoOverride(pageno)
+    self:updateChapterTitle(pageno)
     if self.document.configurable.status_line ~= 0 or self.view.view_mode ~= "page" -- no alt status bar
         or not (self.page_info_override or self.chapter_title == 1 or next(self.additional_header_content)) -- no items to override
     then
@@ -134,15 +162,6 @@ function ReaderCoptListener:updatePageInfoOverride(pageno)
     end
 
     local additional_content = ""
-    if self.chapter_title == 1 then
-        local chapter_title = self.ui.toc:getTocTitleByPage(pageno)
-        if chapter_title and chapter_title ~= "" then
-            additional_content = chapter_title
-            if self.page_number == 1 or self.page_count == 1 or self.reading_percent == 1 then
-                additional_content = additional_content .. "  "
-            end
-        end
-    end
     for dummy, v in ipairs(self.additional_header_content) do
         local value = v()
         if value and value ~= "" then
