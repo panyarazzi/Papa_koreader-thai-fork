@@ -716,6 +716,11 @@ function Input:handleKeyBoardEv(ev)
 
     local keycode = self.event_map[ev.code]
     if not keycode then
+        -- Log unknown Android key presses during rotation diagnostics (e.g. remote keys
+        -- that may not be covered by the generic Android event map).
+        if self.device.isAndroid and self.device:isAndroid() and ev.value == KEY_PRESS then
+            logger.info("Android unmapped key event:", "code", ev.code)
+        end
         -- do not handle keypress for keys we don't know
         return
     end
@@ -726,6 +731,11 @@ function Input:handleKeyBoardEv(ev)
 
     -- take device rotation into account
     local rota = self.device.screen:getRotationMode()
+    if self.device.isAndroid and self.device:isAndroid() and ev.value == KEY_PRESS then
+        local mapped_keycode = self.rotation_map[rota][keycode] or keycode
+        logger.info("Android key rotation diagnostic:",
+            "code", ev.code, "key", keycode, "rotation", rota, "mapped", mapped_keycode)
+    end
     if self.rotation_map[rota][keycode] then
         keycode = self.rotation_map[rota][keycode]
     end
