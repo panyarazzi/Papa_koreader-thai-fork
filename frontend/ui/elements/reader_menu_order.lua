@@ -121,6 +121,7 @@ local order = {
         "backspace_as_back",
         "----------------------------",
         "physical_buttons_setup",
+        "android_disable_page_turn_repeat", -- Android devices without platform key-repeat control
         "----------------------------",
         "android_volume_keys",
         "android_haptic_feedback",
