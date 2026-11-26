@@ -523,7 +523,7 @@ ReaderFooter.default_settings = {
     toc_markers_width = 2, -- unscaled_size_check: ignore
     text_font_size = 14, -- unscaled_size_check: ignore
     text_font_bold = false,
-    text_font_face = "./fonts/noto/NotoSans-Regular.ttf",
+    text_font_face = "./fonts/Sarabun/Sarabun-Regular.ttf",
     container_height = G_defaults:readSetting("DMINIBAR_CONTAINER_HEIGHT"),
     container_bottom_padding = 1, -- unscaled_size_check: ignore
     progress_margin_width = Device:isAndroid() and Screen:scaleByDPI(16) or 10, -- android: guidelines for rounded corner margins
@@ -590,6 +590,12 @@ function ReaderFooter:init()
     self:set_has_no_mode()
     self.reclaim_height = self.settings.reclaim_height
 
+    -- Keep the reader footer's built-in status text consistent with the app UI font.
+    -- Migrate the former default only; preserve any font explicitly selected by the user.
+    if self.settings.text_font_face == "./fonts/noto/NotoSans-Regular.ttf" then
+        self.settings.text_font_face = self.default_settings.text_font_face
+        G_reader_settings:saveSetting("footer", self.settings)
+    end
     if not FontChooser.isFontRegistered(self.settings.text_font_face) then
         self.settings.text_font_face = self.default_settings.text_font_face
     end
