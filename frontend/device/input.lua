@@ -715,6 +715,14 @@ function Input:handleKeyBoardEv(ev)
     end
 
     local keycode = self.event_map[ev.code]
+    -- Meebook G7S physical page buttons use Linux key codes 24/25.
+    -- Ignore kernel-generated hold repeats for these two hardware keys only;
+    -- keep the initial press and release, and leave other input sources untouched.
+    if self.disable_g7s_page_key_repeat and ev.value == KEY_REPEAT
+        and (ev.code == 24 or ev.code == 25)
+        and (keycode == "LPgBack" or keycode == "LPgFwd") then
+        return
+    end
     if not keycode then
         -- Log unknown Android key presses during rotation diagnostics (e.g. remote keys
         -- that may not be covered by the generic Android event map).
