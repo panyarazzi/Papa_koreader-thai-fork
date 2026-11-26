@@ -148,6 +148,7 @@ local order = {
         "patch_management",
         "advanced_settings",
         "developer_options",
+        "papa_diagnostics",
     },
     search = {
         "search_settings",
