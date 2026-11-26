@@ -8,6 +8,7 @@ on:
       - work/apk18-apk14-two-fixes
       - work/apk19-alt-status-top-offset
       - work/apk24-alt-status-top-offset-10dp
+      - work/apk24-phase1-rotation-180-study
   workflow_dispatch:
 defaults:
   run:
