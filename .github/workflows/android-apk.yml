@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - work/ui-font-only-test
+      - work/alt-status-chapter-title
   workflow_dispatch:
 defaults:
   run:
