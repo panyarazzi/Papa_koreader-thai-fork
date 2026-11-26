@@ -806,18 +806,6 @@ common_settings.device = {
     text = _("Device"),
 }
 
-if Device:isAndroid() then
-    common_settings.android_disable_page_turn_repeat = {
-        text = _("Disable page-turn button repeat"),
-        help_text = _("Prevent physical page-turn buttons from turning pages repeatedly while held down."),
-        checked_func = function()
-            return G_reader_settings:isTrue("android_disable_page_turn_repeat")
-        end,
-        callback = function()
-            G_reader_settings:flipNilOrFalse("android_disable_page_turn_repeat")
-        end,
-    }
-end
 
 common_settings.keyboard_layout = {
     text = _("Keyboard"),
