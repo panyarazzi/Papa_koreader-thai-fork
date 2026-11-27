@@ -127,7 +127,16 @@ jobs:
           test -s koreader-thai-android-arm64.apk
           unzip -l koreader-thai-android-arm64.apk | tee "${RUNNER_TEMP}/apk-contents.txt"
           grep -q 'lib/arm64-v8a/' "${RUNNER_TEMP}/apk-contents.txt"
-          grep -q 'plugins/simpleui.koplugin/main.lua' "${RUNNER_TEMP}/apk-contents.txt"
+
+          # KOReader's Lua application is stored in a nested 7z asset, not as
+          # loose files in the outer APK ZIP. Inspect that archive directly.
+          nested_archive="${RUNNER_TEMP}/koreader.7z"
+          unzip -p koreader-thai-android-arm64.apk assets/module/koreader.7z > "${nested_archive}"
+          test -s "${nested_archive}"
+          7z l -slt "${nested_archive}" > "${RUNNER_TEMP}/koreader-contents.txt"
+          grep -Fq 'Path = plugins/simpleui.koplugin/main.lua' "${RUNNER_TEMP}/koreader-contents.txt"
+          grep -Fq 'Path = plugins/simpleui.koplugin/_meta.lua' "${RUNNER_TEMP}/koreader-contents.txt"
+
           sha256sum koreader-thai-android-arm64.apk
 
       - name: List APKs
