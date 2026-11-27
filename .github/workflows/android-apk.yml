@@ -22,6 +22,13 @@ jobs:
           filter: tree:0
           show-progress: false
 
+      - name: Checkout Simple UI plugin
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 plugins/simpleui.koplugin
+          test -f plugins/simpleui.koplugin/main.lua
+          test -f plugins/simpleui.koplugin/_meta.lua
+
       - name: Set up Java 17 for Android Gradle
         uses: actions/setup-java@v4
         with:
@@ -120,6 +127,7 @@ jobs:
           test -s koreader-thai-android-arm64.apk
           unzip -l koreader-thai-android-arm64.apk | tee "${RUNNER_TEMP}/apk-contents.txt"
           grep -q 'lib/arm64-v8a/' "${RUNNER_TEMP}/apk-contents.txt"
+          grep -q 'plugins/simpleui.koplugin/main.lua' "${RUNNER_TEMP}/apk-contents.txt"
           sha256sum koreader-thai-android-arm64.apk
 
       - name: List APKs

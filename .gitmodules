@@ -16,3 +16,6 @@
 	path = l10n
 	url = https://github.com/koreader/koreader-translations.git
 	shallow = true
+[submodule "simpleui"]
+	path = plugins/simpleui.koplugin
+	url = https://github.com/doctorhetfield-cmd/simpleui.koplugin.git
