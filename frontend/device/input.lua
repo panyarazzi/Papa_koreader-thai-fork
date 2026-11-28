@@ -628,6 +628,11 @@ function Input:resetState()
     end
     self:clearTimeouts()
 
+    -- A lost focus may prevent Android from delivering the matching key-up.
+    if self.g7s_page_key_down then
+        self.g7s_page_key_down = {}
+    end
+
     -- Drop the slots on our end, too
     self:newFrame()
     self.cur_slot = self.main_finger_slot
@@ -715,13 +720,23 @@ function Input:handleKeyBoardEv(ev)
     end
 
     local keycode = self.event_map[ev.code]
-    -- Meebook G7S physical page buttons use Linux key codes 24/25.
-    -- Ignore kernel-generated hold repeats for these two hardware keys only;
-    -- keep the initial press and release, and leave other input sources untouched.
-    if self.disable_g7s_page_key_repeat and ev.value == KEY_REPEAT
+    -- Android reports held-key repeats as repeated ACTION_DOWN events. The
+    -- Android input bridge currently turns each one into KEY_PRESS, not KEY_REPEAT,
+    -- so suppress additional downs until the matching release arrives.
+    if self.disable_g7s_page_key_repeat
         and (ev.code == 24 or ev.code == 25)
         and (keycode == "LPgBack" or keycode == "LPgFwd") then
-        return
+        self.g7s_page_key_down = self.g7s_page_key_down or {}
+        if ev.value == KEY_PRESS then
+            if self.g7s_page_key_down[ev.code] then
+                return
+            end
+            self.g7s_page_key_down[ev.code] = true
+        elseif ev.value == KEY_RELEASE then
+            self.g7s_page_key_down[ev.code] = nil
+        elseif ev.value == KEY_REPEAT then
+            return
+        end
     end
     if not keycode then
         -- Log unknown Android key presses during rotation diagnostics (e.g. remote keys
