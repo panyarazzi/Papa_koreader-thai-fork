@@ -130,4 +130,49 @@ Event: time 1510346969.076908, -------------- SYN_REPORT ------------
         end)
     end)
 
+    describe("G7S page-key repeat suppression", function()
+        local function make_input()
+            return setmetatable({
+                disable_g7s_page_key_repeat = true,
+                event_map = {
+                    [24] = "LPgBack",
+                    [25] = "LPgFwd",
+                },
+                event_map_adapter = {},
+                rotation_map = { [0] = {} },
+                device = {
+                    isAndroid = function() return true end,
+                    screen = {
+                        getRotationMode = function() return 0 end,
+                    },
+                },
+                fake_event_set = {},
+                fake_event_args = {},
+                modifiers = {},
+            }, { __index = Input })
+        end
+
+        it("should ignore repeated downs until the matching release", function()
+            local input = make_input()
+            local press = { code = 24, value = 1 }
+            local release = { code = 24, value = 0 }
+
+            assert.is_truthy(input:handleKeyBoardEv(press))
+            assert.is_nil(input:handleKeyBoardEv(press))
+            assert.is_truthy(input:handleKeyBoardEv(release))
+            assert.is_truthy(input:handleKeyBoardEv(press))
+        end)
+
+        it("should track the two page keys independently", function()
+            local input = make_input()
+            local back = { code = 24, value = 1 }
+            local forward = { code = 25, value = 1 }
+
+            assert.is_truthy(input:handleKeyBoardEv(back))
+            assert.is_truthy(input:handleKeyBoardEv(forward))
+            assert.is_nil(input:handleKeyBoardEv(back))
+            assert.is_nil(input:handleKeyBoardEv(forward))
+        end)
+    end)
+
 end)
